@@ -10,7 +10,10 @@ module.exports = (app, channel) => {
     // To listen
     SubscribeMessage(channel, service);
 
-
+    app.get("/version", async (req, res, next) => {
+        return res.json({version: "2.0.0"})
+      });
+    
     app.post('/signup', async (req,res,next) => {
         const { email, password, phone } = req.body;
         const { data } = await service.SignUp({ email, password, phone}); 

@@ -10,6 +10,10 @@ module.exports = (app, channel) => {
 
     SubscribeMessage(channel, service)
 
+    app.get("/version", async (req, res, next) => {
+        return res.json({version: "2.0.0"})
+      });
+
     app.post('/order',UserAuth, async (req,res,next) => {
 
         const { _id } = req.user;

@@ -10,6 +10,10 @@ const UserAuth = require("./middlewares/auth");
 module.exports = (app, channel) => {
   const service = new ProductService();
 
+  app.get("/version", async (req, res, next) => {
+    return res.json({version: "2.0.0"})
+  });
+
   app.post("/product/create", async (req, res, next) => {
     const { name, desc, type, unit, price, available, suplier, banner } =
       req.body;
