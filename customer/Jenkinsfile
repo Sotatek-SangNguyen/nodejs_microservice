@@ -7,8 +7,8 @@ pipeline{
     }
     stages{
         stage('Unit test'){
-            dir(path: 'customer'){
-                steps{
+	    steps{		
+            	dir(path: 'customer'){
                     sh 'npm install'
                     sh 'npm run test'
                 }
