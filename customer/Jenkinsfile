@@ -5,13 +5,15 @@ pipeline{
     }
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
-        DOCKERHUB_REPO_NAME = 'registry.cloudemon.me/devops-620/customer'
+	SERVICE_NAME = 'customer'
+        DOCKERHUB_REPO_NAME = 'registry.cloudemon.me/devops-620/${SERVICE_NAME}'
         DOCKER_IMAGE_TAG = "${env.GIT_COMMIT[0..6]}"
+        DOCKER_REGISTRY_URL = "registry.cloudemon.me"
     }
     stages{
         stage('Unit test'){
 	    steps{		
-            	dir(path: 'customer'){
+            	dir(path: '${SERVICE_NAME}'){
             	    sh 'echo $DOCKER_IMAGE_TAG'
                     sh 'npm install'
                     sh 'npm run test'
@@ -20,7 +22,7 @@ pipeline{
         }
         stage('SonarQube analysis'){
             steps{
-                dir('./customer'){
+                dir('./${SERVICE_NAME}'){
                     withSonarQubeEnv('sonar-server') {
                     sh '''$SCANNER_HOME/bin/sonar-scanner \
                         -Dsonar.projectKey=Devops-620 \
@@ -30,30 +32,9 @@ pipeline{
                 }
             }
         }
-        // stage('Quality Gate'){
-        //     steps{
-        //         // dir('./customer'){
-        //         // timeout(time: 5, unit: 'MINUTES') {
-        //         //     waitForQualityGate abortPipeline: false
-        //         // }
-        //         // }
-        //         script {
-        //             try {
-        //                 timeout(time: 1, unit: 'HOURS') {
-        //                     echo "Checking quality gate..."
-        //                     def qg = waitForQualityGate()
-        //                     echo "Quality gate status: ${qg.status}"
-        //                 }
-        //             } catch (Exception e) {
-        //                 echo "Error: ${e.getMessage()}"
-        //                 error "Quality gate failed"
-        //             }
-        //         }
-        //     }
-        // }
         stage('Scan filesystem'){
             steps{
-                dir('./customer'){
+                dir('./${SERVICE_NAME}'){
                     sh 'trivy fs . > trivy_scan_fs.txt'
                     sh 'cat trivy_scan_fs.txt'
                 }
@@ -61,7 +42,7 @@ pipeline{
         }
         stage('Build Docker image'){
             steps{
-                dir(path: 'customer'){
+                dir(path: '${SERVICE_NAME}'){
                     script{
                         docker.build("${env.DOCKERHUB_REPO_NAME}:${env.DOCKER_IMAGE_TAG}")
                     }
@@ -70,7 +51,7 @@ pipeline{
         }
         stage('Scan Docker image'){
             steps{
-                dir('./customer'){
+                dir('./${SERVICE_NAME}'){
                     sh "trivy image ${env.DOCKERHUB_REPO_NAME}:${env.DOCKER_IMAGE_TAG} > trivy_scan_image.txt"
                     sh 'cat trivy_scan_image.txt'
                 }
@@ -79,9 +60,16 @@ pipeline{
         }
         stage("Docker Image Pushing") {
             steps {
-            	withDockerRegistry(url: 'http://registry.cloudemon.me', credentialsId: 'harbor-token') {
-                sh "docker push ${env.DOCKERHUB_REPO_NAME}:${env.DOCKER_IMAGE_TAG}"
-                }
+            	withCredentials([usernamePassword(
+                    credentialsId: 'harbor-token',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
+                        docker login ${DOCKER_REGISTRY_URL} -u \${DOCKER_USER} -p \${DOCKER_PASS}
+                        docker push ${env.DOCKERHUB_REPO_NAME}:${env.DOCKER_IMAGE_TAG}
+                         """
+                    }
 			}
         }
 
