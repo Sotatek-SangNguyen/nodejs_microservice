@@ -1,5 +1,8 @@
 pipeline{
     agent any
+    tools {
+	nodejs 'NodeJS 20.18.1'
+    }
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
         DOCKERHUB_REPO_NAME = 'registry.cloudemon.me/devops-620/customer'
