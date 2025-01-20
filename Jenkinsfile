@@ -118,5 +118,32 @@ pipeline{
                     }
 			}
         }
+        stage('Checkout code'){
+            steps {
+                git credentialsId: 'github-token', url: 'https://github.com/Sotatek-SangNguyen/DevOps620-K8s-manifest'
+            }
+        }
+        stage('Update Deployment file') {
+            environment {
+                GIT_REPO_NAME = "DevOps620-K8s-manifest"
+                GIT_USER_NAME = "Sotatek-SangNguyen"
+            }
+            steps {
+            	dir('${env.SERVICE_NAME}'){
+                    withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                        sh '''
+                            git config user.email "sang.nguyen@sotatek.com"
+                            git config user.name "Nguyen Sang"
+                            imageTag=$(grep -oP '(?<=${env.SERVICE_NAME}:)[^ ]+' deployment.yaml)
+                            echo $imageTag
+                            sed -i "s/${DOCKERHUB_REPO_NAME}:${imageTag}/${env.DOCKERHUB_REPO_NAME}:${env.DOCKER_IMAGE_TAG}/" deployment.yaml
+                            git add deployment.yaml
+                            git commit -m "Update deployment Image to version \${env.DOCKER_IMAGE_TAG}"
+                            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:master
+                        '''
+                    }
+                }
+            }
+        }
     }
 }
