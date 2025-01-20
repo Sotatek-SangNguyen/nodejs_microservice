@@ -11,7 +11,7 @@ module.exports = (app, channel) => {
     SubscribeMessage(channel, service);
 
     app.get("/version", async (req, res, next) => {
-        return res.json({version: "2.0.2"})
+        return res.json({version: "2.0.3"})
       });
     
     app.post('/signup', async (req,res,next) => {
