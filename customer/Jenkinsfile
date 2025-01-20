@@ -5,24 +5,45 @@ pipeline{
     }
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
-	SERVICE_NAME = 'customer'
-        DOCKERHUB_REPO_NAME = 'registry.cloudemon.me/devops-620/${SERVICE_NAME}'
+        // DOCKERHUB_REPO_NAME = 'registry.cloudemon.me/devops-620/customer'
         DOCKER_IMAGE_TAG = "${env.GIT_COMMIT[0..6]}"
         DOCKER_REGISTRY_URL = "registry.cloudemon.me"
     }
     stages{
-        stage('Unit test'){
-	    steps{		
-            	dir(path: '${SERVICE_NAME}'){
-            	    sh 'echo $DOCKER_IMAGE_TAG'
-                    sh 'npm install'
-                    sh 'npm run test'
+        stage('Prepare'){
+            steps {
+                script {
+                    def services = [
+                        'customer': 'customer/',
+                        'products': 'products/',
+                        'shopping': 'shopping/'
+                    ]
+
+                    services.each {
+                        service, path ->
+                            def isChanged = changeset "${path}"
+                            if(isChanged){
+                                echo "Service ${service} is changed"
+                                env.SERVICE_NAME = service
+                                env.DOCKERHUB_REPO_NAME = "registry.cloudemon.me/devops-620/${service}"
+                            }
+                    }
                 }
+                sh 'exit 1'
+            }
+        }
+        stage('Unit test'){
+            steps{		
+                    dir(path: '${env.SERVICE_NAME}'){
+                        sh 'echo $DOCKER_IMAGE_TAG'
+                        sh 'npm install'
+                        sh 'npm run test'
+                    }
             }
         }
         stage('SonarQube analysis'){
             steps{
-                dir('./${SERVICE_NAME}'){
+                dir('${env.SERVICE_NAME}'){
                     withSonarQubeEnv('sonar-server') {
                     sh '''$SCANNER_HOME/bin/sonar-scanner \
                         -Dsonar.projectKey=Devops-620 \
@@ -32,9 +53,30 @@ pipeline{
                 }
             }
         }
+        // stage('Quality Gate'){
+        //     steps{
+        //         // dir('./customer'){
+        //         // timeout(time: 5, unit: 'MINUTES') {
+        //         //     waitForQualityGate abortPipeline: false
+        //         // }
+        //         // }
+        //         script {
+        //             try {
+        //                 timeout(time: 1, unit: 'HOURS') {
+        //                     echo "Checking quality gate..."
+        //                     def qg = waitForQualityGate()
+        //                     echo "Quality gate status: ${qg.status}"
+        //                 }
+        //             } catch (Exception e) {
+        //                 echo "Error: ${e.getMessage()}"
+        //                 error "Quality gate failed"
+        //             }
+        //         }
+        //     }
+        // }
         stage('Scan filesystem'){
             steps{
-                dir('./${SERVICE_NAME}'){
+                dir('${env.SERVICE_NAME}'){
                     sh 'trivy fs . > trivy_scan_fs.txt'
                     sh 'cat trivy_scan_fs.txt'
                 }
@@ -42,7 +84,7 @@ pipeline{
         }
         stage('Build Docker image'){
             steps{
-                dir(path: '${SERVICE_NAME}'){
+                dir(path: '${env.SERVICE_NAME}'){
                     script{
                         docker.build("${env.DOCKERHUB_REPO_NAME}:${env.DOCKER_IMAGE_TAG}")
                     }
@@ -51,7 +93,7 @@ pipeline{
         }
         stage('Scan Docker image'){
             steps{
-                dir('./${SERVICE_NAME}'){
+                dir('${env.SERVICE_NAME}'){
                     sh "trivy image ${env.DOCKERHUB_REPO_NAME}:${env.DOCKER_IMAGE_TAG} > trivy_scan_image.txt"
                     sh 'cat trivy_scan_image.txt'
                 }
@@ -66,12 +108,12 @@ pipeline{
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh """
+                        echo ${DOCKER_USER}
                         docker login ${DOCKER_REGISTRY_URL} -u \${DOCKER_USER} -p \${DOCKER_PASS}
                         docker push ${env.DOCKERHUB_REPO_NAME}:${env.DOCKER_IMAGE_TAG}
                          """
                     }
 			}
         }
-
     }
 }
