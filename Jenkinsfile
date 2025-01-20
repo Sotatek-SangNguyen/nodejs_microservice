@@ -130,7 +130,7 @@ pipeline{
             }
             steps {
             	dir("${env.SERVICE_NAME}"){
-                    withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                    withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
                         sh '''
                             git config user.email "sang.nguyen@sotatek.com"
                             git config user.name "Nguyen Sang"
