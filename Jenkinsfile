@@ -57,7 +57,7 @@ pipeline{
         }
         stage('Unit test'){
             steps{		
-                    dir(path: '${env.SERVICE_NAME}'){
+                    dir(path: "${env.SERVICE_NAME}"){
                         sh 'echo $DOCKER_IMAGE_TAG'
                         sh 'npm install'
                         sh 'npm run test'
@@ -66,7 +66,7 @@ pipeline{
         }
         stage('SonarQube analysis'){
             steps{
-                dir('${env.SERVICE_NAME}'){
+                dir("${env.SERVICE_NAME}"){
                     withSonarQubeEnv('sonar-server') {
                     sh '''$SCANNER_HOME/bin/sonar-scanner \
                         -Dsonar.projectKey=Devops-620 \
@@ -79,7 +79,7 @@ pipeline{
 
         stage('Scan filesystem'){
             steps{
-                dir('${env.SERVICE_NAME}'){
+                dir("${env.SERVICE_NAME}"){
                     sh 'trivy fs . > trivy_scan_fs.txt'
                     sh 'cat trivy_scan_fs.txt'
                 }
@@ -87,7 +87,7 @@ pipeline{
         }
         stage('Build Docker image'){
             steps{
-                dir(path: '${env.SERVICE_NAME}'){
+                dir(path: "${env.SERVICE_NAME}"){
                     script{
                         docker.build("${env.DOCKERHUB_REPO_NAME}:${env.DOCKER_IMAGE_TAG}")
                     }
@@ -96,7 +96,7 @@ pipeline{
         }
         stage('Scan Docker image'){
             steps{
-                dir('${env.SERVICE_NAME}'){
+                dir("${env.SERVICE_NAME}"){
                     sh "trivy image ${env.DOCKERHUB_REPO_NAME}:${env.DOCKER_IMAGE_TAG} > trivy_scan_image.txt"
                     sh 'cat trivy_scan_image.txt'
                 }
@@ -129,7 +129,7 @@ pipeline{
                 GIT_USER_NAME = "Sotatek-SangNguyen"
             }
             steps {
-            	dir('${env.SERVICE_NAME}'){
+            	dir("${env.SERVICE_NAME}"){
                     withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                         sh '''
                             git config user.email "sang.nguyen@sotatek.com"
