@@ -19,22 +19,45 @@ pipeline{
                         'shopping': 'shopping/'
                     ]
 
-                    services.each {
-                        service, path ->
-                            def isChanged = changeset "${path}"
-                            if(isChanged){
-                                echo "Service ${service} is changed"
-                                env.SERVICE_NAME = service
-                                env.DOCKERHUB_REPO_NAME = "registry.cloudemon.me/devops-620/${service}"
+                    def changeLogSets = currentBuild.changeSets
+                    def changedFiles = []
+                    
+                    
+                    changeLogSets.each { changeSet ->
+                        changeSet.getItems().each { item ->
+                            item.getAffectedFiles().each { file ->
+                                changedFiles.add(file.getPath())
+                                println file.getPath()
                             }
+                        }
+                    }
+                    
+                    // Tìm service bị ảnh hưởng
+                    def affectedService = null
+                    
+                    services.each { service, path ->
+                        if (changedFiles.any { file -> file.startsWith(path) }) {
+                            affectedService = service
+                            echo "Found changes in service: ${service}"
+                            echo "Changed files in ${service}:"
+                            changedFiles.findAll { it.startsWith(path) }.each { file ->
+                                echo "  - ${file}"
+                            }
+                        }
+                    }
+                    
+                    if (affectedService) {
+                        env.SERVICE_NAME = affectedService
+                        env.DOCKERHUB_REPO_NAME = "registry.cloudemon.me/devops-620/${affectedService}"
+                    } else {
+                        error "No service changes detected"
                     }
                 }
-                sh 'exit 1'
             }
         }
         stage('Unit test'){
             steps{		
-                    dir(path: '${env.SERVICE_NAME}'){
+                    dir(path: "${env.SERVICE_NAME}"){
                         sh 'echo $DOCKER_IMAGE_TAG'
                         sh 'npm install'
                         sh 'npm run test'
@@ -43,7 +66,7 @@ pipeline{
         }
         stage('SonarQube analysis'){
             steps{
-                dir('${env.SERVICE_NAME}'){
+                dir("${env.SERVICE_NAME}"){
                     withSonarQubeEnv('sonar-server') {
                     sh '''$SCANNER_HOME/bin/sonar-scanner \
                         -Dsonar.projectKey=Devops-620 \
@@ -53,30 +76,10 @@ pipeline{
                 }
             }
         }
-        // stage('Quality Gate'){
-        //     steps{
-        //         // dir('./customer'){
-        //         // timeout(time: 5, unit: 'MINUTES') {
-        //         //     waitForQualityGate abortPipeline: false
-        //         // }
-        //         // }
-        //         script {
-        //             try {
-        //                 timeout(time: 1, unit: 'HOURS') {
-        //                     echo "Checking quality gate..."
-        //                     def qg = waitForQualityGate()
-        //                     echo "Quality gate status: ${qg.status}"
-        //                 }
-        //             } catch (Exception e) {
-        //                 echo "Error: ${e.getMessage()}"
-        //                 error "Quality gate failed"
-        //             }
-        //         }
-        //     }
-        // }
+
         stage('Scan filesystem'){
             steps{
-                dir('${env.SERVICE_NAME}'){
+                dir("${env.SERVICE_NAME}"){
                     sh 'trivy fs . > trivy_scan_fs.txt'
                     sh 'cat trivy_scan_fs.txt'
                 }
@@ -84,7 +87,7 @@ pipeline{
         }
         stage('Build Docker image'){
             steps{
-                dir(path: '${env.SERVICE_NAME}'){
+                dir(path: "${env.SERVICE_NAME}"){
                     script{
                         docker.build("${env.DOCKERHUB_REPO_NAME}:${env.DOCKER_IMAGE_TAG}")
                     }
@@ -93,7 +96,7 @@ pipeline{
         }
         stage('Scan Docker image'){
             steps{
-                dir('${env.SERVICE_NAME}'){
+                dir("${env.SERVICE_NAME}"){
                     sh "trivy image ${env.DOCKERHUB_REPO_NAME}:${env.DOCKER_IMAGE_TAG} > trivy_scan_image.txt"
                     sh 'cat trivy_scan_image.txt'
                 }
@@ -114,6 +117,33 @@ pipeline{
                          """
                     }
 			}
+        }
+        stage('Checkout code'){
+            steps {
+                git credentialsId: 'github-token', url: 'https://github.com/Sotatek-SangNguyen/DevOps620-K8s-manifest'
+            }
+        }
+        stage('Update Deployment file') {
+            environment {
+                GIT_REPO_NAME = "DevOps620-K8s-manifest"
+                GIT_USER_NAME = "Sotatek-SangNguyen"
+            }
+            steps {
+            	dir("${env.SERVICE_NAME}"){
+                    withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                        sh '''
+                            git config user.email "sang.nguyen@sotatek.com"
+                            git config user.name "Nguyen Sang"
+                            imageTag=$(grep -oP '(?<=${env.SERVICE_NAME}:)[^ ]+' deployment.yaml)
+                            echo $imageTag
+                            sed -i "s/${DOCKERHUB_REPO_NAME}:${imageTag}/${env.DOCKERHUB_REPO_NAME}:${env.DOCKER_IMAGE_TAG}/" deployment.yaml
+                            git add deployment.yaml
+                            git commit -m "Update deployment Image to version \${env.DOCKER_IMAGE_TAG}"
+                            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:master
+                        '''
+                    }
+                }
+            }
         }
     }
 }
