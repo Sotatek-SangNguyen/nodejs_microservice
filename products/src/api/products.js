@@ -11,7 +11,7 @@ module.exports = (app, channel) => {
   const service = new ProductService();
 
   app.get("/version", async (req, res, next) => {
-    return res.json({version: "2.0.0"})
+    return res.json({version: "2.0.1"})
   });
 
   app.post("/product/create", async (req, res, next) => {
