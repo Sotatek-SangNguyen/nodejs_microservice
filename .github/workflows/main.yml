@@ -17,6 +17,6 @@ jobs:
           ls -al
           pwd
   second_test:
-    runs-on: ubuntu-latest
+    runs-on: ec2
     steps:
       - run: ls -al
