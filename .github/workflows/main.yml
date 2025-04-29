@@ -7,5 +7,12 @@ jobs:
       - run: ls -al
       - run: pwd
       - run: whoami
-      - run: cd ..
-      - run: ls -al
+      - run: |
+          touch test.txt
+          ls -al
+          mkdir test
+          cd test
+          pwd
+      - run: |
+          ls -al
+          pwd
