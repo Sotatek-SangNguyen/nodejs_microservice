@@ -2,7 +2,7 @@ name: Testing GitHub Actions workflow
 on: workflow_dispatch
 jobs:
   first_test:
-    runs-on: ubuntu-latest
+    runs-on: ec2
     steps:
       - run: ls -al
       - run: pwd
