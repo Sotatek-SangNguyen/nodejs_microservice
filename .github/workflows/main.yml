@@ -5,3 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: ls -al
+      - run: pwd
+      - run: whoami
+      - run: cd ..
+      - run: ls -al
