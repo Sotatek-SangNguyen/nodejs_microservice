@@ -14,3 +14,6 @@ jobs:
     steps:
       - run: |
           echo ${{ env.TEST }}
+          echo $TEST
+          export TEST2=ABC
+          echo ${{ env.TEST2 }}
