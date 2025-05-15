@@ -1,22 +1,16 @@
 name: Testing GitHub Actions workflow
 on: workflow_dispatch
+env:
+  TEST: Hello
 jobs:
   first_test:
-    runs-on: ec2
+    runs-on: ubuntu-latest
+    env:
+      TEST: Hi
     steps:
-      - run: ls -al
-      - run: pwd
-      - run: whoami
-      - run: |
-          touch test.txt
-          ls -al
-          mkdir test
-          cd test
-          pwd
-      - run: |
-          ls -al
-          pwd
+      - run: echo ${{ env.TEST }}
   second_test:
-    runs-on: ec2
+    runs-on: ubuntu-latest
     steps:
-      - run: ls -al
+      - run: |
+          echo ${{ env.TEST }}
