@@ -2,6 +2,9 @@ name: Testing GitHub Actions workflow
 on: workflow_dispatch
 env:
   TEST: Hello
+  TEST2: ${{ env.TEST }}
+  TEST3: ${{ env.TEST4 }}
+  TEST4: Hi
 jobs:
   first_test:
     runs-on: ubuntu-latest
@@ -13,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          echo ${{ env.TEST }}
           echo $TEST
-          export TEST2=ABC
-          echo ${{ env.TEST2 }}
+          echo $TEST2
+          echo $TEST3
+          echo $TEST4
