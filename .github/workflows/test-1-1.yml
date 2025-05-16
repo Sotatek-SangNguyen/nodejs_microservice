@@ -12,3 +12,5 @@ jobs:
       run: echo "$GITHUB_CONTEXT" | jq .
       env:
         GITHUB_CONTEXT: ${{ toJson(github) }}
+    - name: Print from master
+      run: echo "Hi I'm master branch"
