@@ -11,7 +11,7 @@ jobs:
       - run: |
           echo ${{ env.TEST }}
           echo $TEST
-          echo "TEST2=test2" >> $GITHUB.ENV
+          echo "TEST2=test2" >> $GITHUB_ENV
   second_test:
     runs-on: ubuntu-latest
     steps:
