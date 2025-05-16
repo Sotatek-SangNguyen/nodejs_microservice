@@ -11,11 +11,11 @@ jobs:
       - run: |
           echo ${{ env.TEST }}
           echo $TEST
+          echo "TEST2=test2" >> $GITHUB.ENV
   second_test:
     runs-on: ubuntu-latest
     steps:
       - run: |
           echo $TEST
           echo $TEST2
-          echo $TEST3
-          echo $TEST4
+          echo ${{ env.TEST2 }}
