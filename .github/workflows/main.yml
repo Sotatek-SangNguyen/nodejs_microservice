@@ -2,14 +2,15 @@ name: Testing GitHub Actions workflow
 on: workflow_dispatch
 env:
   TEST: Hello
-  TEST2: ${{ env.TEST }}
 jobs:
   first_test:
     runs-on: ubuntu-latest
     env:
       TEST: Hi
     steps:
-      - run: echo ${{ env.TEST }}
+      - run: |
+          echo ${{ env.TEST }}
+          echo $TEST
   second_test:
     runs-on: ubuntu-latest
     steps:
