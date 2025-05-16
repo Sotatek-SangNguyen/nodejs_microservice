@@ -2,7 +2,6 @@ name: Test workflow 2
 on:
   push:
     branches:
-      - "master"
       - "dev"
 jobs:
   print:
@@ -12,3 +11,5 @@ jobs:
       run: echo "$GITHUB_CONTEXT" | jq .
       env:
         GITHUB_CONTEXT: ${{ toJson(github) }}
+    - name: Print from dev branch
+      run: echo "Hi I'm dev branch"
