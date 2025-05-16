@@ -1,0 +1,14 @@
+name: Test workflow 2
+on:
+  push:
+    branches:
+      - "master"
+      - "dev"
+jobs:
+  print:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Debug all GitHub context
+      run: echo "$GITHUB_CONTEXT" | jq .
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
