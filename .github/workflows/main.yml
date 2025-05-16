@@ -3,8 +3,6 @@ on: workflow_dispatch
 env:
   TEST: Hello
   TEST2: ${{ env.TEST }}
-  TEST3: ${{ env.TEST4 }}
-  TEST4: Hi
 jobs:
   first_test:
     runs-on: ubuntu-latest
