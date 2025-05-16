@@ -12,6 +12,11 @@ jobs:
           echo ${{ env.TEST }}
           echo $TEST
           echo "TEST2=test2" >> $GITHUB_ENV
+          export TEST3=test3
+      - run: |
+          echo ${{ env.TEST2 }}
+          echo $TEST2
+          echo $TEST3
   second_test:
     runs-on: ubuntu-latest
     steps:
